@@ -11,15 +11,22 @@ COGNITO_APP_CLIENT_ID = st.secrets["cognito"]["COGNITO_APP_CLIENT_ID"]
 COGNITO_USER_POOL_IDENTITY_POOL_ID = st.secrets["cognito"]["COGNITO_USER_POOL_IDENTITY_POOL_ID"]
 COGNITO_IDENTITY_POOL_ID = st.secrets["cognito"]["COGNITO_IDENTITY_POOL_ID"]
 AWS_DEFAULT_REGION = st.secrets["aws"]["AWS_DEFAULT_REGION"]
+AWS_ACCESS_KEY_ID = st.secrets["aws"]["AWS_ACCESS_KEY_ID"]
+AWS_SECRET_ACCESS_KEY = st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"]
 
 # Initialize Cognito and Identity clients
-cognito_client = boto3.client('cognito-idp', region_name=AWS_DEFAULT_REGION)
-identity_client = boto3.client('cognito-identity', region_name=AWS_DEFAULT_REGION)
+cognito_client = boto3.client('cognito-idp', 
+                              region_name=AWS_DEFAULT_REGION,
+                              aws_access_key_id=AWS_ACCESS_KEY_ID,
+                              aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+identity_client = boto3.client('cognito-identity', 
+                               region_name=AWS_DEFAULT_REGION,
+                               aws_access_key_id=AWS_ACCESS_KEY_ID,
+                               aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 # Function to sign up a new user
 def signup_user(email, password):
     try:
-        # Sign up user in Cognito
         response = cognito_client.sign_up(
             ClientId=COGNITO_APP_CLIENT_ID,
             Username=email,
