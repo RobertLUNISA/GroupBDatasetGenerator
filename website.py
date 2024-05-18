@@ -170,15 +170,16 @@ def main():
         st.header('Download Dataset')
         st.write('You will receive a downloadable custom dataset link.')
 
+    # Ensure the form context is properly used
     with st.form(key='dataset_form'):
         algorithm = st.selectbox('Machine Learning Task:', ['', 'Random Forest', 'Linear Regression', 'K-nearest Neighbours'])
         features = st.selectbox('Number of Features:', ['', 'less than 10', '10 or more'])
         instances = st.selectbox('Number of Instances:', ['', 'less than 500', '500 or more'])
         topic = st.selectbox('Dataset Topic:', ['', 'Health', 'Finance', 'Education', 'Technology', 'Entertainment'])
         cleanliness = st.selectbox('Data Cleanliness:', ['', 'Clean', 'Unclean'])
-        submit_button = st.form_submit_button('Generate Dataset', disabled=not st.session_state['logged_in'])
+        submit_button = st.form_submit_button('Generate Dataset')
 
-    if submit_button:
+    if submit_button and st.session_state['logged_in']:
         if algorithm and features and instances and topic:
             metadata = fetch_dataset_metadata(algorithm, features, instances, topic, cleanliness)
             if metadata:
