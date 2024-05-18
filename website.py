@@ -111,23 +111,21 @@ def main():
     st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
 
     # Login/Sign Off and Signup section
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.session_state['logged_in']:
-            st.markdown(f"**Welcome, {st.session_state['email']}!**", unsafe_allow_html=True)
-            if st.button("Sign Off", key="sign_off"):
-                st.session_state['logged_in'] = False
-                st.session_state['email'] = ''
-                st.session_state['id_token'] = ''
-                st.session_state['menu'] = 'Home'
-        else:
-            col_login, col_signup = st.columns(2)
-            with col_login:
-                if st.button("Login", key="homepage_login"):
-                    st.session_state['menu'] = "Login"
-            with col_signup:
-                if st.button("Signup", key="homepage_signup"):
-                    st.session_state['menu'] = "Signup"
+    if st.session_state['logged_in']:
+        st.markdown(f"**Welcome, {st.session_state['email']}!**", unsafe_allow_html=True)
+        if st.button("Sign Off", key="sign_off"):
+            st.session_state['logged_in'] = False
+            st.session_state['email'] = ''
+            st.session_state['id_token'] = ''
+            st.session_state['menu'] = 'Home'
+    else:
+        col_login, col_signup = st.columns(2)
+        with col_login:
+            if st.button("Login", key="homepage_login"):
+                st.session_state['menu'] = "Login"
+        with col_signup:
+            if st.button("Signup", key="homepage_signup"):
+                st.session_state['menu'] = "Signup"
 
     # Handle the login and signup processes
     if not st.session_state['logged_in']:
@@ -167,7 +165,7 @@ def main():
         st.write('Answer five inputs below to specify your dataset needs.')
     with col2:
         st.header('Search the Dataset')
-        st.write('Our program then identifies or creates your dataset.')
+        st.write('Our program then identifies or create your dataset.')
     with col3:
         st.header('Download Dataset')
         st.write('You will receive a downloadable custom dataset link.')
@@ -189,7 +187,7 @@ def main():
                 if dataset_link:
                     # Display metadata
                     st.markdown(f"**Dataset Name:** {selected_metadata['Dataset Name']}")
-                    st.markdown(f"**Machine Learning Task:** {selected_metadata['Machine Learning Task']}") 
+                    st.markdown(f"**Machine Learning Task:** {selected_metadata['Machine Learning Task']}")
                     st.markdown(f"**Download Link:** [Download Dataset]({dataset_link})")
                     st.markdown(f"**Number of Features:** {selected_metadata['Number of Features']}")
                     st.markdown(f"**Number of Instances:** {selected_metadata['Number of Instances']}")
