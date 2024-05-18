@@ -8,6 +8,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Load AWS Cognito configuration from Streamlit secrets
 COGNITO_USER_POOL_ID = st.secrets["cognito"]["COGNITO_USER_POOL_ID"]
 COGNITO_APP_CLIENT_ID = st.secrets["cognito"]["COGNITO_APP_CLIENT_ID"]
+COGNITO_USER_POOL_IDENTITY_POOL_ID = st.secrets["cognito"]["COGNITO_USER_POOL_IDENTITY_POOL_ID"]
 COGNITO_IDENTITY_POOL_ID = st.secrets["cognito"]["COGNITO_IDENTITY_POOL_ID"]
 AWS_DEFAULT_REGION = st.secrets["aws"]["AWS_DEFAULT_REGION"]
 
@@ -30,14 +31,26 @@ def signup_user(email, password):
         logging.info(f"Sign up response: {response}")
 
         # Confirm the user sign up
-        cognito_client.admin_confirm_sign_up(
+        response_admin_confirm = cognito_client.admin_confirm_sign_up(
             UserPoolId=COGNITO_USER_POOL_ID,
             Username=email
         )
-        logging.info(f"User {email} confirmed successfully.")
+        logging.info(f"User {email} confirmed successfully: {response_admin_confirm}")
         return response
     except cognito_client.exceptions.UsernameExistsException:
         logging.error("User already exists")
+        return None
+    except cognito_client.exceptions.InvalidParameterException as e:
+        logging.error(f"Invalid parameters provided: {e}")
+        return None
+    except cognito_client.exceptions.CodeMismatchException as e:
+        logging.error(f"Invalid confirmation code provided: {e}")
+        return None
+    except cognito_client.exceptions.NotAuthorizedException as e:
+        logging.error(f"Not authorized to confirm user: {e}")
+        return None
+    except cognito_client.exceptions.UserNotFoundException as e:
+        logging.error(f"User not found: {e}")
         return None
     except Exception as e:
         logging.error(f"Error signing up: {e}")
@@ -46,7 +59,6 @@ def signup_user(email, password):
 # Function to authenticate a user and get tokens
 def authenticate_user(email, password):
     try:
-        # Initiate auth to get tokens
         response = cognito_client.initiate_auth(
             ClientId=COGNITO_APP_CLIENT_ID,
             AuthFlow='USER_PASSWORD_AUTH',
