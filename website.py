@@ -158,6 +158,7 @@ def main():
                         st.markdown(f'<div class="custom-success">Account created successfully for {new_email}</div>', unsafe_allow_html=True)
                     else:
                         st.markdown('<div class="custom-error">Failed to create account</div>', unsafe_allow_html=True)
+                        logging.error(f"Signup response: {response}")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -179,52 +180,56 @@ def main():
         cleanliness = st.selectbox('Data Cleanliness:', ['', 'Clean', 'Unclean'])
         submit_button = st.form_submit_button('Generate Dataset')
 
-    if submit_button and st.session_state['logged_in']:
-        if algorithm and features and instances and topic:
-            metadata = fetch_dataset_metadata(algorithm, features, instances, topic, cleanliness)
-            if metadata:
-                selected_metadata = metadata[0]
-                dataset_link = generate_presigned_url(st.secrets["aws"]["AWS_S3_BUCKET"], selected_metadata['S3ObjectKey'])
-                if dataset_link:
-                    # Display metadata
-                    st.markdown(f"**Dataset Name:** {selected_metadata['Dataset Name']}")
-                    st.markdown(f"**Machine Learning Task:** {selected_metadata['Machine Learning Task']}")
-                    st.markdown(f"**Download Link:** [Download Dataset]({dataset_link})")
-                    st.markdown(f"**Number of Features:** {selected_metadata['Number of Features']}")
-                    st.markdown(f"**Number of Instances:** {selected_metadata['Number of Instances']}")
-                    st.markdown(f"**Size in KB:** {selected_metadata['Size in KB']}")
-                    st.markdown(f"**Source Link:** [Source]({selected_metadata['Source Link']})")
-                    st.markdown(f"**Target Variable:** {selected_metadata['Target Variable']}")
-                    st.markdown(f"**Topic:** {selected_metadata['Topic']}")
-
-                    # Display dataset preview (first 50 rows)
-                    dataset_preview = pd.read_csv(dataset_link)
-                    if cleanliness == 'Unclean':
-                        dataset_preview = make_dataset_unclean(dataset_preview)
-                    st.dataframe(dataset_preview.head(51))
-                else:
-                    st.markdown('<div class="custom-error">Failed to generate a download link. Please try again.</div>', unsafe_allow_html=True)
-            else:
-                object_key = generate_synthetic_dataset(algorithm, instances, features, st.session_state['id_token'])
-                dataset_link = generate_presigned_url(st.secrets["aws"]["AWS_S3_BUCKET"], object_key)
-
-                if dataset_link:
-                    st.markdown(f"**Dataset Name:** Synthetic Dataset")
-                    st.markdown(f"**Machine Learning Task:** {algorithm}")
-                    st.markdown(f"**Download Link:** [Download Dataset]({dataset_link})")
-                    st.markdown(f"**Number of Features:** {9 if features == 'less than 10' else 10}")
-                    st.markdown(f"**Number of Instances:** {499 if instances == 'less than 500' else 501}")
-                    st.markdown(f"**Target Variable:** Target")
-
-                    # Display dataset preview (first 50 rows)
-                    dataset_preview = pd.read_csv(dataset_link)
-                    if cleanliness == 'Unclean':
-                        dataset_preview = make_dataset_unclean(dataset_preview)
-                    st.dataframe(dataset_preview.head(51))
-                else:
-                    st.markdown('<div class="custom-error">Failed to generate a download link. Please try again.</div>', unsafe_allow_html=True)
+    if submit_button:
+        if not st.session_state['logged_in']:
+            st.markdown('<div class="custom-error">Please sign in to generate a dataset.</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="custom-error">Please fill in all the fields.</div>', unsafe_allow_html=True)
+            if algorithm and features and instances and topic:
+                metadata = fetch_dataset_metadata(algorithm, features, instances, topic, cleanliness)
+                if metadata:
+                    selected_metadata = metadata[0]
+                    dataset_link = generate_presigned_url(st.secrets["aws"]["AWS_S3_BUCKET"], selected_metadata['S3ObjectKey'])
+                    if dataset_link:
+                        # Display metadata
+                        st.markdown(f"**Dataset Name:** {selected_metadata['Dataset Name']}")
+                        st.markdown(f"**Machine Learning Task:** {selected_metadata['Machine Learning Task']}")
+                        st.markdown(f"**Download Link:** [Download Dataset]({dataset_link})")
+                        st.markdown(f"**Number of Features:** {selected_metadata['Number of Features']}")
+                        st.markdown(f"**Number of Instances:** {selected_metadata['Number of Instances']}")
+                        st.markdown(f"**Size in KB:** {selected_metadata['Size in KB']}")
+                        st.markdown(f"**Source Link:** [Source]({selected_metadata['Source Link']})")
+                        st.markdown(f"**Target Variable:** {selected_metadata['Target Variable']}")
+                        st.markdown(f"**Topic:** {selected_metadata['Topic']}")
+
+                        # Display dataset preview (first 50 rows)
+                        dataset_preview = pd.read_csv(dataset_link)
+                        if cleanliness == 'Unclean':
+                            dataset_preview = make_dataset_unclean(dataset_preview)
+                        st.dataframe(dataset_preview.head(51))
+                    else:
+                        st.markdown('<div class="custom-error">Failed to generate a download link. Please try again.</div>', unsafe_allow_html=True)
+                else:
+                    with st.spinner('Generating synthetic dataset...'):
+                        object_key = generate_synthetic_dataset(algorithm, instances, features, st.session_state['id_token'])
+                        dataset_link = generate_presigned_url(st.secrets["aws"]["AWS_S3_BUCKET"], object_key)
+
+                        if dataset_link:
+                            st.markdown(f"**Dataset Name:** Synthetic Dataset")
+                            st.markdown(f"**Machine Learning Task:** {algorithm}")
+                            st.markdown(f"**Download Link:** [Download Dataset]({dataset_link})")
+                            st.markdown(f"**Number of Features:** {9 if features == 'less than 10' else 10}")
+                            st.markdown(f"**Number of Instances:** {499 if instances == 'less than 500' else 501}")
+                            st.markdown(f"**Target Variable:** Target")
+
+                            # Display dataset preview (first 50 rows)
+                            dataset_preview = pd.read_csv(dataset_link)
+                            if cleanliness == 'Unclean':
+                                dataset_preview = make_dataset_unclean(dataset_preview)
+                            st.dataframe(dataset_preview.head(51))
+                        else:
+                            st.markdown('<div class="custom-error">Failed to generate a download link. Please try again.</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="custom-error">Please fill in all the fields.</div>', unsafe_allow_html=True)
 
     st.subheader('About')
     st.write('Our platform is designed to assist students and researchers in finding datasets for their machine learning experiments. By streamlining the process with powerful search functionalities, we aim to provide accurate and meaningful results.')

@@ -18,6 +18,7 @@ identity_client = boto3.client('cognito-identity', region_name=AWS_DEFAULT_REGIO
 # Function to sign up a new user
 def signup_user(email, password):
     try:
+        # Sign up user in Cognito
         response = cognito_client.sign_up(
             ClientId=COGNITO_APP_CLIENT_ID,
             Username=email,
@@ -26,11 +27,18 @@ def signup_user(email, password):
                 {'Name': 'email', 'Value': email}
             ]
         )
+        logging.info(f"Sign up response: {response}")
+
+        # Confirm the user sign up
         cognito_client.admin_confirm_sign_up(
             UserPoolId=COGNITO_USER_POOL_ID,
             Username=email
         )
+        logging.info(f"User {email} confirmed successfully.")
         return response
+    except cognito_client.exceptions.UsernameExistsException:
+        logging.error("User already exists")
+        return None
     except Exception as e:
         logging.error(f"Error signing up: {e}")
         return None
@@ -38,6 +46,7 @@ def signup_user(email, password):
 # Function to authenticate a user and get tokens
 def authenticate_user(email, password):
     try:
+        # Initiate auth to get tokens
         response = cognito_client.initiate_auth(
             ClientId=COGNITO_APP_CLIENT_ID,
             AuthFlow='USER_PASSWORD_AUTH',
