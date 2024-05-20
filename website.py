@@ -108,8 +108,6 @@ if 'menu' not in st.session_state:
 def main():
     st.title('Dataset Generator')
 
-    st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
-
     # Login/Sign Off and Signup section
     if st.session_state['logged_in']:
         st.markdown(f"**Welcome, {st.session_state['email']}!**", unsafe_allow_html=True)
@@ -126,6 +124,8 @@ def main():
         with col_signup:
             if st.button("Signup", key="homepage_signup"):
                 st.session_state['menu'] = "Signup"
+                
+    st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
 
     # Handle the login and signup processes
     if not st.session_state['logged_in']:
