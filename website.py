@@ -6,7 +6,7 @@ from user_auth import signup_user, authenticate_user
 from dataset_gen import main as generate_synthetic_dataset
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(asctime)s - %(message)s')
 
 # Custom styles for Streamlit app
 st.markdown("""
@@ -134,15 +134,15 @@ def main():
             email = st.text_input("Email")
             password = st.text_input("Password", type='password')
             if st.button("Login", key="login_page_login"):
-                st.session_state['email'] = email  # Store email in session state
                 with st.spinner('Signing in...'):
                     response = authenticate_user(email, password)
-                    if response:
-                        st.session_state['logged_in'] = True
-                        st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
-                        st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
+                if response:
+                    st.session_state['logged_in'] = True
+                    st.session_state['email'] = email
+                    st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
+                    st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
         elif st.session_state['menu'] == "Signup":
             st.subheader("Create New Account")
             new_email = st.text_input("Email", key="new_email")
@@ -154,13 +154,12 @@ def main():
                 elif not password_requirements(new_password):
                     st.markdown('<div class="custom-error">Password must be at least 8 characters long, contain at least 1 number, 1 special character, 1 uppercase letter, and 1 lowercase letter.</div>', unsafe_allow_html=True)
                 else:
-                    with st.spinner('Creating account...'):
-                        response = signup_user(new_email, new_password)
-                        if response:
-                            st.markdown(f'<div class="custom-success">Account created successfully for {new_email}</div>', unsafe_allow_html=True)
-                        else:
-                            st.markdown('<div class="custom-error">Failed to create account</div>', unsafe_allow_html=True)
-                            logging.error(f"Signup response: {response}")
+                    response = signup_user(new_email, new_password)
+                    if response:
+                        st.markdown(f'<div class="custom-success">Account created successfully for {new_email}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<div class="custom-error">Failed to create account</div>', unsafe_allow_html=True)
+                        logging.error(f"Signup response: {response}")
 
     col1, col2, col3 = st.columns(3)
     with col1:
