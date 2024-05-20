@@ -96,8 +96,7 @@ def main(algorithm, size, features, id_token):
         data = dataset_generator(algorithm, size, features)
         path = f"Synthetic_Dataset_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         target_variable = 'Target'
-        algorithm_index = data.columns.get_loc(target_variable)
-        clean_df, valid = validator.validator(data, algorithm_index, target_variable)
+        clean_df, valid = validator.validator(data, algorithm, target_variable)  # Update to pass algorithm name
         if valid:
             object_key = upload_csv_to_s3(clean_df, st.secrets["aws"]["AWS_S3_BUCKET"], "", path, is_synthetic=True, id_token=id_token)
             if object_key:

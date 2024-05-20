@@ -290,5 +290,6 @@ def validator(data, algorithm_index, target_variable):
         return clean_df, validate_random_forest(X_train, X_test, y_train, y_test)
     elif algorithm_index == 3:
         return clean_df, validate_knn(X_train, X_test, y_train, y_test)
-    
+    else:
+        return clean_df, False
 
