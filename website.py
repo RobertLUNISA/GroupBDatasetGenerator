@@ -134,6 +134,7 @@ def main():
             email = st.text_input("Email")
             password = st.text_input("Password", type='password')
             if st.button("Login", key="login_page_login"):
+                logging.info(f"Attempting to login user: {email}")
                 response = authenticate_user(email, password)
                 if response:
                     st.session_state['logged_in'] = True
