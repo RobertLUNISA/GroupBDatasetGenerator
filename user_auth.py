@@ -66,6 +66,8 @@ def signup_user(email, password):
 # Function to authenticate a user and get tokens
 def authenticate_user(email, password):
     try:
+        if not email:
+            raise ValueError("Email is required for authentication.")
         logging.info(f"Attempting to authenticate user: {email}")
         response = cognito_client.initiate_auth(
             ClientId=COGNITO_APP_CLIENT_ID,
@@ -77,6 +79,9 @@ def authenticate_user(email, password):
         )
         logging.info(f"Authentication response: {response}")
         return response
+    except ValueError as e:
+        logging.error(f"Error: {e}")
+        return None
     except cognito_client.exceptions.NotAuthorizedException:
         logging.error("The username or password is incorrect")
         return None

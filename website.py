@@ -134,15 +134,20 @@ def main():
             email = st.text_input("Email")
             password = st.text_input("Password", type='password')
             if st.button("Login", key="login_page_login"):
-                logging.info(f"Attempting to login user: {email}")
-                response = authenticate_user(email, password)
-                if response:
-                    st.session_state['logged_in'] = True
-                    st.session_state['email'] = email
-                    st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
-                    st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
+                if not email:
+                    st.markdown('<div class="custom-error">Email is required.</div>', unsafe_allow_html=True)
+                elif not password:
+                    st.markdown('<div class="custom-error">Password is required.</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
+                    logging.info(f"Attempting to login user: {email}")
+                    response = authenticate_user(email, password)
+                    if response:
+                        st.session_state['logged_in'] = True
+                        st.session_state['email'] = email
+                        st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
+                        st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
         elif st.session_state['menu'] == "Signup":
             st.subheader("Create New Account")
             new_email = st.text_input("Email", key="new_email")
