@@ -4,6 +4,7 @@ import logging
 from web_implementation import generate_presigned_url, fetch_dataset_metadata, make_dataset_unclean, password_requirements
 from user_auth import signup_user, authenticate_user
 from dataset_gen import main as generate_synthetic_dataset
+import streamlit.components.v1 as components
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -131,28 +132,30 @@ def main():
     if not st.session_state['logged_in']:
         if st.session_state['menu'] == "Login":
             st.subheader("Login")
-            email = st.text_input("Email")
-            password = st.text_input("Password", type='password')
+            # HTML input fields with autocomplete off
+            email_html = '<input type="text" name="email" placeholder="Email" autocomplete="off" required>'
+            password_html = '<input type="password" name="password" placeholder="Password" autocomplete="off" required>'
+            email = components.html(email_html, height=35)
+            password = components.html(password_html, height=35)
             if st.button("Login", key="login_page_login"):
-                if not email:
-                    st.markdown('<div class="custom-error">Email is required.</div>', unsafe_allow_html=True)
-                elif not password:
-                    st.markdown('<div class="custom-error">Password is required.</div>', unsafe_allow_html=True)
+                logging.info(f"Attempting to login user: {email}")
+                response = authenticate_user(email, password)
+                if response:
+                    st.session_state['logged_in'] = True
+                    st.session_state['email'] = email
+                    st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
+                    st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
                 else:
-                    logging.info(f"Attempting to login user: {email}")
-                    response = authenticate_user(email, password)
-                    if response:
-                        st.session_state['logged_in'] = True
-                        st.session_state['email'] = email
-                        st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
-                        st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
         elif st.session_state['menu'] == "Signup":
             st.subheader("Create New Account")
-            new_email = st.text_input("Email", key="new_email")
-            new_password = st.text_input("Choose Password", type='password', key="new_password")
-            confirm_password = st.text_input("Confirm Password", type='password', key="confirm_password")
+            # HTML input fields with autocomplete off
+            new_email_html = '<input type="text" name="new_email" placeholder="Email" autocomplete="off" required>'
+            new_password_html = '<input type="password" name="new_password" placeholder="Password" autocomplete="off" required>'
+            confirm_password_html = '<input type="password" name="confirm_password" placeholder="Confirm Password" autocomplete="off" required>'
+            new_email = components.html(new_email_html, height=35)
+            new_password = components.html(new_password_html, height=35)
+            confirm_password = components.html(confirm_password_html, height=35)
             if st.button("Signup", key="signup_page_signup"):
                 if new_password != confirm_password:
                     st.markdown('<div class="custom-error">Passwords do not match</div>', unsafe_allow_html=True)
