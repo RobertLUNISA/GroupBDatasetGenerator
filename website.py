@@ -6,7 +6,7 @@ from user_auth import signup_user, authenticate_user
 from dataset_gen import main as generate_synthetic_dataset
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Custom styles for Streamlit app
 st.markdown("""

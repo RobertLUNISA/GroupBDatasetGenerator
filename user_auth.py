@@ -77,7 +77,7 @@ def authenticate_user(email, password):
         logging.info(f"Authentication response: {response}")
         return response
     except cognito_client.exceptions.NotAuthorizedException:
-        logging.error("The username or password is incorrect")
+        logging.error("The email or password is incorrect")
         return None
     except cognito_client.exceptions.UserNotConfirmedException:
         logging.error("User is not confirmed")
@@ -107,4 +107,3 @@ def get_temp_credentials(id_token):
     except Exception as e:
         logging.error(f"Error getting temporary credentials: {e}")
         return None
-    
