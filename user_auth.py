@@ -3,7 +3,7 @@ import logging
 import streamlit as st
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load AWS Cognito configuration from Streamlit secrets
 COGNITO_USER_POOL_ID = st.secrets["cognito"]["COGNITO_USER_POOL_ID"]
@@ -15,11 +15,11 @@ AWS_ACCESS_KEY_ID = st.secrets["aws"]["AWS_ACCESS_KEY_ID"]
 AWS_SECRET_ACCESS_KEY = st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"]
 
 # Initialize Cognito and Identity clients
-cognito_client = boto3.client('cognito-idp',
+cognito_client = boto3.client('cognito-idp', 
                               region_name=AWS_DEFAULT_REGION,
                               aws_access_key_id=AWS_ACCESS_KEY_ID,
                               aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-identity_client = boto3.client('cognito-identity',
+identity_client = boto3.client('cognito-identity', 
                                region_name=AWS_DEFAULT_REGION,
                                aws_access_key_id=AWS_ACCESS_KEY_ID,
                                aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
@@ -66,7 +66,6 @@ def signup_user(email, password):
 # Function to authenticate a user and get tokens
 def authenticate_user(email, password):
     try:
-        logging.info(f"Attempting to authenticate user: {email}")
         response = cognito_client.initiate_auth(
             ClientId=COGNITO_APP_CLIENT_ID,
             AuthFlow='USER_PASSWORD_AUTH',
@@ -108,3 +107,4 @@ def get_temp_credentials(id_token):
     except Exception as e:
         logging.error(f"Error getting temporary credentials: {e}")
         return None
+    
