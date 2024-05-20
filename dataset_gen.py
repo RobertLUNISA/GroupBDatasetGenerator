@@ -53,7 +53,7 @@ def random_forest_dataset(column_counts=9, row_counts=1000):
     return X
 
 # Function to generate a k-nearest-neighbors dataset
-def knn_dataset(column_counts=9, row_counts=1000):
+def k_nearest_neighbors_dataset(column_counts=9, row_counts=1000):
     features = []
 
     for i in range(column_counts - 1):
@@ -85,7 +85,7 @@ def dataset_generator(algorithm, size, features):
     elif algorithm == 'Random Forest':
         return random_forest_dataset(column_counts=column_counts, row_counts=row_counts)
     elif algorithm == 'k-nearest-neighbors':
-        return knn_dataset(column_counts=column_counts, row_counts=row_counts)
+        return k_nearest_neighbors_dataset(column_counts=column_counts, row_counts=row_counts)
     else:
         raise ValueError(f"Unsupported algorithm specified: {algorithm}")
 
@@ -96,7 +96,11 @@ def main(algorithm, size, features, id_token):
         data = dataset_generator(algorithm, size, features)
         path = f"Synthetic_Dataset_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         target_variable = 'Target'
-        clean_df, valid = validator.validator(data, algorithm, target_variable)  # Update to pass algorithm name
+        algorithm_index = data.columns.get_loc(target_variable)
+        algorithm_name = algorithm.lower().replace(" ", "-")
+        algorithm_map = {1: "linear-regression", 2: "random-forest", 3: "k-nearest-neighbors"}
+        algorithm_index = next((key for key, value in algorithm_map.items() if value == algorithm_name), None)
+        clean_df, valid = validator.validator(data, algorithm_index, target_variable)
         if valid:
             object_key = upload_csv_to_s3(clean_df, st.secrets["aws"]["AWS_S3_BUCKET"], "", path, is_synthetic=True, id_token=id_token)
             if object_key:
@@ -106,3 +110,4 @@ def main(algorithm, size, features, id_token):
                 print("*** Generating New Synthetic Dataset ***")
         else:
             print("*** Dataset validation failed ***")
+            

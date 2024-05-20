@@ -1,7 +1,121 @@
+# Import necessary modules
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from database import upload_csv_to_s3
+import validator
+import streamlit as st
+
+# Function to generate a linear regression dataset
+def linear_regression_dataset(column_counts=9, row_counts=1000):
+    features = []
+
+    for i in range(column_counts - 1):
+        if i < 3:
+            if i == 0:
+                features.append(np.random.normal(20, 5, row_counts))
+            elif i == 1:
+                features.append(np.random.normal(50, 10, row_counts))
+            else:
+                features.append(np.random.uniform(0, 1, row_counts))
+        else:
+            features.append(np.random.normal(0, 0.1, row_counts))
+
+    y = 2 * features[0] + 0.5 * features[1] + 10 * features[2] + np.random.normal(0, 2, row_counts)
+    column_names = [f'Feature_{i+1}' for i in range(column_counts - 1)] + ['Target']
+    X = pd.DataFrame(np.column_stack(features + [y]), columns=column_names)
+
+    return X
+
+# Function to generate a random forest dataset
+def random_forest_dataset(column_counts=9, row_counts=1000):
+    features = []
+
+    for i in range(column_counts - 1):
+        if i == 0:
+            features.append(np.random.normal(0, 1, row_counts))
+        elif i == 1:
+            features.append(np.random.normal(5, 2, row_counts))
+        elif i == 2:
+            features.append(np.random.randint(0, 3, row_counts))
+        elif i == 3:
+            features.append(features[0] * features[1])
+        elif i == 4:
+            features.append(np.random.choice([0, 1], size=row_counts, p=[0.7, 0.3]))
+        else:
+            features.append(np.random.normal(0, 1, row_counts))
+
+    y = (features[0]**2 + np.sin(features[1]) + features[2] > np.median(features[0]**2 + np.sin(features[1]) + features[2])).astype(int)
+    feature_names = [f'Feature_{i+1}' for i in range(column_counts - 1)]
+    X = pd.DataFrame(np.column_stack(features), columns=feature_names)
+    X['Target'] = y
+
+    return X
+
+# Function to generate a k-nearest-neighbors dataset
+def k_nearest_neighbors_dataset(column_counts=9, row_counts=1000):
+    features = []
+
+    for i in range(column_counts - 1):
+        if i == 0:
+            features.append(np.random.normal(0, 1, row_counts))
+        elif i == 1:
+            features.append(np.sin(features[0]) + np.random.normal(0, 0.1, row_counts))
+        elif i == 2:
+            features.append(features[0]**2 + np.random.normal(0, 1, row_counts))
+        elif i == 3:
+            features.append(np.random.choice([0, 1, 2], size=row_counts))
+        else:
+            features.append(np.random.normal(0, 1, row_counts))
+
+    y = (2*features[0] - features[1] + features[2] + 5*np.where(features[3] == 2, 1, 0) > 1).astype(int)
+    column_names = [f'Feature_{i+1}' for i in range(column_counts - 1)]
+    X = pd.DataFrame(np.column_stack(features), columns=column_names)
+    X['Target'] = y
+
+    return X
+
+# Function to generate a dataset based on the specified algorithm
+def dataset_generator(algorithm, size, features):
+    row_counts = 499 if size == "less than 500" else 501
+    column_counts = 9 if features == 'less than 10' else 10
+
+    if algorithm == 'Linear Regression':
+        return linear_regression_dataset(column_counts=column_counts, row_counts=row_counts)
+    elif algorithm == 'Random Forest':
+        return random_forest_dataset(column_counts=column_counts, row_counts=row_counts)
+    elif algorithm == 'k-nearest-neighbors':
+        return k_nearest_neighbors_dataset(column_counts=column_counts, row_counts=row_counts)
+    else:
+        raise ValueError(f"Unsupported algorithm specified: {algorithm}")
+
+# Main function to generate and validate a synthetic dataset
+def main(algorithm, size, features, id_token):
+    print("Validating the Synthetic Dataset")
+    while True:
+        data = dataset_generator(algorithm, size, features)
+        path = f"Synthetic_Dataset_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        target_variable = 'Target'
+        algorithm_index = data.columns.get_loc(target_variable)
+        algorithm_name = algorithm.lower().replace(" ", "-")
+        algorithm_map = {1: "linear-regression", 2: "random-forest", 3: "k-nearest-neighbors"}
+        algorithm_index = next((key for key, value in algorithm_map.items() if value == algorithm_name), None)
+        clean_df, valid = validator.validator(data, algorithm_index, target_variable)
+        if valid:
+            object_key = upload_csv_to_s3(clean_df, st.secrets["aws"]["AWS_S3_BUCKET"], "", path, is_synthetic=True, id_token=id_token)
+            if object_key:
+                print(f"*** Dataset uploaded successfully. ***")
+                return object_key
+            else:
+                print("*** Generating New Synthetic Dataset ***")
+        else:
+            print("*** Dataset validation failed ***")
+
+
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, precision_score, recall_score, f1_score,confusion_matrix, classification_report
+from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 from sklearn.impute import SimpleImputer, SimpleImputer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
@@ -30,12 +144,12 @@ def select_algorithm():
     print("Select the Machine Learning Algorithm Suitable for this dataset:")
     print("1. Linear Regression")
     print("2. Random Forest")
-    print("3. K-nearest neighbors (KNN)")
+    print("3. k-nearest-neighbors")
 
     while True:
         try:
             algo_index = int(input("Enter the number corresponding to the algorithm: "))
-            algorithms = {1: "Linear Regression", 2: "Random Forest", 3: "K-nearest neighbors (KNN)"}
+            algorithms = {1: "Linear Regression", 2: "Random Forest", 3: "k-nearest-neighbors"}
             if algo_index in algorithms:
                 print(f"You have selected {algorithms[algo_index]}")
                 return algo_index
@@ -120,53 +234,54 @@ def validate_random_forest(X_train, X_test, y_train, y_test):
         print("Dataset may not be suitable for Random Forest. Consider reviewing the data.")
         return False
 
+def validate_k_nearest_neighbors(X_train, X_test, y_train, y_test):
+    # Apply PCA to reduce the dimensions to X principal components
+    components = len(X_train.columns)
+    pca = PCA(n_components=3 if components > 2 else components)
+    X_train_pca = pca.fit_transform(X_train)
+    X_test_pca = pca.transform(X_test)
+    # print("Explained variance ratio by top 3 components:", pca.explained_variance_ratio_)
 
-def validate_knn(X_train, X_test, y_train, y_test):
-    try:
-        # Apply PCA to reduce the dimensions to X principal components
-        components = len(X_train.columns)
-        pca = PCA(n_components=3 if components > 2 else components)
-        X_train_pca = pca.fit_transform(X_train)
-        X_test_pca = pca.transform(X_test)
+    # Hyperparameter tuning for k-nearest-neighbors on PCA-reduced dataset
+    params = {
+        'n_neighbors': range(1, 11, 2), 
+        'weights': ['uniform', 'distance'], 
+        'metric': ['euclidean', 'manhattan']
+    }
+    knn = KNeighborsClassifier()
+    grid_search = GridSearchCV(knn, params, cv=10, scoring='accuracy')
+    grid_search.fit(X_train_pca, y_train)
+    
+    # Best KNN model
+    best_knn = grid_search.best_estimator_
+    # print("Best KNN Parameters:", grid_search.best_params_)
 
-        # Hyperparameter tuning for KNN on PCA-reduced dataset
-        params = {
-            'n_neighbors': range(1, 11, 2), 
-            'weights': ['uniform', 'distance'], 
-            'metric': ['euclidean', 'manhattan']
-        }
-        knn = KNeighborsClassifier()
-        grid_search = GridSearchCV(knn, params, cv=10, scoring='accuracy')
-        grid_search.fit(X_train_pca, y_train)
-        
-        # Best KNN model
-        best_knn = grid_search.best_estimator_
+    # Cross-validation to evaluate model
+    cv_scores = cross_val_score(best_knn, X_train_pca, y_train, cv=10, scoring='accuracy')
+    print("Average CV Accuracy with PCA:", np.mean(cv_scores))
 
-        # Cross-validation to evaluate model
-        cv_scores = cross_val_score(best_knn, X_train_pca, y_train, cv=10, scoring='accuracy')
-        print("Average CV Accuracy with PCA:", np.mean(cv_scores))
+    # Final evaluation on the test set
+    y_pred = best_knn.predict(X_test_pca)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='macro')
+    recall = recall_score(y_test, y_pred, average='macro')
+    f1 = f1_score(y_test, y_pred, average='macro')
 
-        # Final evaluation on the test set
-        y_pred = best_knn.predict(X_test_pca)
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average='macro')
-        recall = recall_score(y_test, y_pred, average='macro')
-        f1 = f1_score(y_test, y_pred, average='macro')
+    # Print classification report and confusion matrix
+    # print(classification_report(y_test, y_pred))
+    # print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
 
-        print("Test Set Metrics with PCA:")
-        print(f"Accuracy: {accuracy:.2f}")
-        print(f"Precision: {precision:.2f}")
-        print(f"Recall: {recall:.2f}")
-        print(f"F1 Score: {f1:.2f}")
+    print("Test Set Metrics with PCA:")
+    print(f"Accuracy: {accuracy:.2f}")
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print(f"F1 Score: {f1:.2f}")
 
-        if accuracy > 0.80 and precision > 0.80 and recall > 0.80 and f1 > 0.80:
-            print("Dataset provided is suitable for KNN")
-            return True
-        else:
-            print("Dataset may not be suitable for KNN. Consider reviewing the data.")
-            return False
-    except Exception as e:
-        print(f"Error in KNN validation: {e}")
+    if accuracy > 0.80 and precision > 0.80 and recall > 0.80 and f1 > 0.80:
+        print("Dataset provided is suitable for k-nearest-neighbors")
+        return True
+    else:
+        print("Dataset may not be suitable for k-nearest-neighbors. Consider reviewing the data.")
         return False
 
 def dynamic_preprocess(data, target_variable=None, correlation_threshold=0.85):
@@ -267,24 +382,20 @@ def validate_algorithm_suitability(data, target_variable, algorithm_name):
             return False
     return True
 
-def validator(data, algorithm, target_variable):
+def validator(data, algorithm_index, target_variable):
     constant_columns = [col for col in data.columns if data[col].nunique() == 1]
     data.drop(constant_columns, axis=1, inplace=True)
     clean_df, data_processed = dynamic_preprocess(data, target_variable)
 
     X = data_processed.drop(target_variable, axis=1)
     y = data_processed[target_variable]
-
+ 
     stratify_option = y if data_processed[target_variable].nunique() == 2 else None
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=stratify_option, random_state=42)
 
-    if algorithm == "linear-regression":
+    if algorithm_index == 1:
         return clean_df, validate_linear_regression(X_train, X_test, y_train, y_test)
-    elif algorithm == "random-forest":
+    elif algorithm_index == 2:
         return clean_df, validate_random_forest(X_train, X_test, y_train, y_test)
-    elif algorithm == "k-nearest-neighbors":
-        return clean_df, validate_knn(X_train, X_test, y_train, y_test)
-    else:
-        print(f"Unsupported algorithm specified: {algorithm}")
-        return clean_df, False
-    
+    elif algorithm_index == 3:
+        return clean_df, validate_k_nearest_neighbors(X_train, X_test, y_train, y_test)
