@@ -66,6 +66,7 @@ def signup_user(email, password):
 # Function to authenticate a user and get tokens
 def authenticate_user(email, password):
     try:
+        logging.info(f"Attempting to authenticate user: {email}")
         response = cognito_client.initiate_auth(
             ClientId=COGNITO_APP_CLIENT_ID,
             AuthFlow='USER_PASSWORD_AUTH',
@@ -77,7 +78,7 @@ def authenticate_user(email, password):
         logging.info(f"Authentication response: {response}")
         return response
     except cognito_client.exceptions.NotAuthorizedException:
-        logging.error("The email or password is incorrect")
+        logging.error("The username or password is incorrect")
         return None
     except cognito_client.exceptions.UserNotConfirmedException:
         logging.error("User is not confirmed")
@@ -89,6 +90,7 @@ def authenticate_user(email, password):
 # Function to get temporary credentials using an ID token
 def get_temp_credentials(id_token):
     try:
+        logging.info("Getting temporary credentials")
         identity_id_response = identity_client.get_id(
             IdentityPoolId=COGNITO_IDENTITY_POOL_ID,
             Logins={
@@ -96,6 +98,7 @@ def get_temp_credentials(id_token):
             }
         )
         identity_id = identity_id_response['IdentityId']
+        logging.info(f"Identity ID response: {identity_id_response}")
 
         credentials_response = identity_client.get_credentials_for_identity(
             IdentityId=identity_id,
@@ -103,6 +106,7 @@ def get_temp_credentials(id_token):
                 f'cognito-idp.{AWS_DEFAULT_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}': id_token
             }
         )
+        logging.info(f"Credentials response: {credentials_response}")
         return credentials_response['Credentials']
     except Exception as e:
         logging.error(f"Error getting temporary credentials: {e}")
