@@ -134,11 +134,11 @@ def main():
             email = st.text_input("Email")
             password = st.text_input("Password", type='password')
             if st.button("Login", key="login_page_login"):
+                st.session_state['email'] = email  # Store email in session state
                 with st.spinner('Signing in...'):
                     response = authenticate_user(email, password)
                     if response:
                         st.session_state['logged_in'] = True
-                        st.session_state['email'] = email
                         st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
                         st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
                     else:
