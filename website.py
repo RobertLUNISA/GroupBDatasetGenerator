@@ -174,7 +174,7 @@ def main():
 
     # Ensure the form context is properly used
     with st.form(key='dataset_form'):
-        algorithm = st.selectbox('Machine Learning Task:', ['', 'Random Forest', 'Linear Regression', 'K-nearest Neighbours'])
+        algorithm = st.selectbox('Machine Learning Task:', ['', 'Random Forest', 'Linear Regression', 'K-nearest neighbours'])
         features = st.selectbox('Number of Features:', ['', 'less than 10', '10 or more'])
         instances = st.selectbox('Number of Instances:', ['', 'less than 500', '500 or more'])
         topic = st.selectbox('Dataset Topic:', ['', 'Health', 'Finance', 'Education', 'Technology', 'Entertainment'])
