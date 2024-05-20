@@ -106,4 +106,3 @@ def main(algorithm, size, features, id_token):
                 print("*** Generating New Synthetic Dataset ***")
         else:
             print("*** Dataset validation failed ***")
-

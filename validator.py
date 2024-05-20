@@ -121,56 +121,52 @@ def validate_random_forest(X_train, X_test, y_train, y_test):
         return False
 
 
-
-
 def validate_knn(X_train, X_test, y_train, y_test):
-  # Apply PCA to reduce the dimensions to X principal components
-    components = len(X_train.columns)
-    pca = PCA(n_components=3 if components > 2 else components)
-    X_train_pca = pca.fit_transform(X_train)
-    X_test_pca = pca.transform(X_test)
-    # print("Explained variance ratio by top 3 components:", pca.explained_variance_ratio_)
+    try:
+        # Apply PCA to reduce the dimensions to X principal components
+        components = len(X_train.columns)
+        pca = PCA(n_components=3 if components > 2 else components)
+        X_train_pca = pca.fit_transform(X_train)
+        X_test_pca = pca.transform(X_test)
 
-    # Hyperparameter tuning for KNN on PCA-reduced dataset
-    params = {
-        'n_neighbors': range(1, 11, 2), 
-        'weights': ['uniform', 'distance'], 
-        'metric': ['euclidean', 'manhattan']
-    }
-    knn = KNeighborsClassifier()
-    grid_search = GridSearchCV(knn, params, cv=10, scoring='accuracy')
-    grid_search.fit(X_train_pca, y_train)
-    
-    # Best KNN model
-    best_knn = grid_search.best_estimator_
-    # print("Best KNN Parameters:", grid_search.best_params_)
+        # Hyperparameter tuning for KNN on PCA-reduced dataset
+        params = {
+            'n_neighbors': range(1, 11, 2), 
+            'weights': ['uniform', 'distance'], 
+            'metric': ['euclidean', 'manhattan']
+        }
+        knn = KNeighborsClassifier()
+        grid_search = GridSearchCV(knn, params, cv=10, scoring='accuracy')
+        grid_search.fit(X_train_pca, y_train)
+        
+        # Best KNN model
+        best_knn = grid_search.best_estimator_
 
-    # Cross-validation to evaluate model
-    cv_scores = cross_val_score(best_knn, X_train_pca, y_train, cv=10, scoring='accuracy')
-    print("Average CV Accuracy with PCA:", np.mean(cv_scores))
+        # Cross-validation to evaluate model
+        cv_scores = cross_val_score(best_knn, X_train_pca, y_train, cv=10, scoring='accuracy')
+        print("Average CV Accuracy with PCA:", np.mean(cv_scores))
 
-    # Final evaluation on the test set
-    y_pred = best_knn.predict(X_test_pca)
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average='macro')
-    recall = recall_score(y_test, y_pred, average='macro')
-    f1 = f1_score(y_test, y_pred, average='macro')
+        # Final evaluation on the test set
+        y_pred = best_knn.predict(X_test_pca)
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='macro')
+        recall = recall_score(y_test, y_pred, average='macro')
+        f1 = f1_score(y_test, y_pred, average='macro')
 
-    # Print classification report and confusion matrix
-    # print(classification_report(y_test, y_pred))
-    # print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+        print("Test Set Metrics with PCA:")
+        print(f"Accuracy: {accuracy:.2f}")
+        print(f"Precision: {precision:.2f}")
+        print(f"Recall: {recall:.2f}")
+        print(f"F1 Score: {f1:.2f}")
 
-    print("Test Set Metrics with PCA:")
-    print(f"Accuracy: {accuracy:.2f}")
-    print(f"Precision: {precision:.2f}")
-    print(f"Recall: {recall:.2f}")
-    print(f"F1 Score: {f1:.2f}")
-
-    if accuracy > 0.80 and precision > 0.80 and recall > 0.80 and f1 > 0.80:
-        print("Dataset provided is suitable for KNN")
-        return True
-    else:
-        print("Dataset may not be suitable for KNN. Consider reviewing the data.")
+        if accuracy > 0.80 and precision > 0.80 and recall > 0.80 and f1 > 0.80:
+            print("Dataset provided is suitable for KNN")
+            return True
+        else:
+            print("Dataset may not be suitable for KNN. Consider reviewing the data.")
+            return False
+    except Exception as e:
+        print(f"Error in KNN validation: {e}")
         return False
 
 def dynamic_preprocess(data, target_variable=None, correlation_threshold=0.85):
@@ -256,8 +252,6 @@ def dynamic_preprocess(data, target_variable=None, correlation_threshold=0.85):
 
     return clean_df, processed_df
 
-
-
 def validate_algorithm_suitability(data, target_variable, algorithm_name):
     if algorithm_name in ["random-forest", "k-nearest-neighbors"]:
         if pd.api.types.is_numeric_dtype(data[target_variable]):
@@ -273,23 +267,24 @@ def validate_algorithm_suitability(data, target_variable, algorithm_name):
             return False
     return True
 
-def validator(data, algorithm_index, target_variable):
+def validator(data, algorithm, target_variable):
     constant_columns = [col for col in data.columns if data[col].nunique() == 1]
     data.drop(constant_columns, axis=1, inplace=True)
     clean_df, data_processed = dynamic_preprocess(data, target_variable)
 
     X = data_processed.drop(target_variable, axis=1)
     y = data_processed[target_variable]
- 
+
     stratify_option = y if data_processed[target_variable].nunique() == 2 else None
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=stratify_option, random_state=42)
 
-    if algorithm_index == 1:
+    if algorithm == "linear-regression":
         return clean_df, validate_linear_regression(X_train, X_test, y_train, y_test)
-    elif algorithm_index == 2:
+    elif algorithm == "random-forest":
         return clean_df, validate_random_forest(X_train, X_test, y_train, y_test)
-    elif algorithm_index == 3:
+    elif algorithm == "k-nearest-neighbors":
         return clean_df, validate_knn(X_train, X_test, y_train, y_test)
     else:
+        print(f"Unsupported algorithm specified: {algorithm}")
         return clean_df, False
-
+    
