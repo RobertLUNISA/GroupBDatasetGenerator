@@ -154,12 +154,13 @@ def main():
                 elif not password_requirements(new_password):
                     st.markdown('<div class="custom-error">Password must be at least 8 characters long, contain at least 1 number, 1 special character, 1 uppercase letter, and 1 lowercase letter.</div>', unsafe_allow_html=True)
                 else:
-                    response = signup_user(new_email, new_password)
-                    if response:
-                        st.markdown(f'<div class="custom-success">Account created successfully for {new_email}</div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<div class="custom-error">Failed to create account</div>', unsafe_allow_html=True)
-                        logging.error(f"Signup response: {response}")
+                    with st.spinner('Creating account...'):
+                        response = signup_user(new_email, new_password)
+                        if response:
+                            st.markdown(f'<div class="custom-success">Account created successfully for {new_email}</div>', unsafe_allow_html=True)
+                        else:
+                            st.markdown('<div class="custom-error">Failed to create account</div>', unsafe_allow_html=True)
+                            logging.error(f"Signup response: {response}")
 
     col1, col2, col3 = st.columns(3)
     with col1:
