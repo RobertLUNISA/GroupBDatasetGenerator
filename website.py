@@ -134,20 +134,15 @@ def main():
             email = st.text_input("Email")
             password = st.text_input("Password", type='password')
             if st.button("Login", key="login_page_login"):
-                if not email:
-                    st.markdown('<div class="custom-error">Email is required.</div>', unsafe_allow_html=True)
-                elif not password:
-                    st.markdown('<div class="custom-error">Password is required.</div>', unsafe_allow_html=True)
+                logging.info(f"Attempting to authenticate user: {email}")
+                response = authenticate_user(email, password)
+                if response:
+                    st.session_state['logged_in'] = True
+                    st.session_state['email'] = email
+                    st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
+                    st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
                 else:
-                    logging.info(f"Attempting to login user: {email}")
-                    response = authenticate_user(email, password)
-                    if response:
-                        st.session_state['logged_in'] = True
-                        st.session_state['email'] = email
-                        st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
-                        st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="custom-error">Invalid email or password</div>', unsafe_allow_html=True)
         elif st.session_state['menu'] == "Signup":
             st.subheader("Create New Account")
             new_email = st.text_input("Email", key="new_email")
@@ -179,7 +174,7 @@ def main():
 
     # Ensure the form context is properly used
     with st.form(key='dataset_form'):
-        algorithm = st.selectbox('Machine Learning Task:', ['', 'Random Forest', 'Linear Regression', 'k-nearest-neighbors'])
+        algorithm = st.selectbox('Machine Learning Task:', ['', 'Random Forest', 'Linear Regression', 'K-nearest Neighbours'])
         features = st.selectbox('Number of Features:', ['', 'less than 10', '10 or more'])
         instances = st.selectbox('Number of Instances:', ['', 'less than 500', '500 or more'])
         topic = st.selectbox('Dataset Topic:', ['', 'Health', 'Finance', 'Education', 'Technology', 'Entertainment'])
@@ -195,6 +190,9 @@ def main():
                 if metadata:
                     selected_metadata = metadata[0]
                     dataset_link = generate_presigned_url(st.secrets["aws"]["AWS_S3_BUCKET"], selected_metadata['S3ObjectKey'])
+                    logging.info(f"Selected metadata: {selected_metadata}")
+                    logging.info(f"Generated presigned URL for dataset: {dataset_link}")
+
                     if dataset_link:
                         # Display metadata
                         st.markdown(f"**Dataset Name:** {selected_metadata['Dataset Name']}")
@@ -207,17 +205,22 @@ def main():
                         st.markdown(f"**Target Variable:** {selected_metadata['Target Variable']}")
                         st.markdown(f"**Topic:** {selected_metadata['Topic']}")
 
-                        # Display dataset preview (first 50 rows)
-                        dataset_preview = pd.read_csv(dataset_link)
-                        if cleanliness == 'Unclean':
-                            dataset_preview = make_dataset_unclean(dataset_preview)
-                        st.dataframe(dataset_preview.head(51))
+                        try:
+                            # Display dataset preview (first 50 rows)
+                            dataset_preview = pd.read_csv(dataset_link)
+                            if cleanliness == 'Unclean':
+                                dataset_preview = make_dataset_unclean(dataset_preview)
+                            st.dataframe(dataset_preview.head(51))
+                        except Exception as e:
+                            st.markdown('<div class="custom-error">Failed to read the dataset from the generated link.</div>', unsafe_allow_html=True)
+                            logging.error(f"Failed to read the dataset from the generated link: {e}")
                     else:
                         st.markdown('<div class="custom-error">Failed to generate a download link. Please try again.</div>', unsafe_allow_html=True)
                 else:
                     with st.spinner('Generating synthetic dataset...'):
                         object_key = generate_synthetic_dataset(algorithm, instances, features, st.session_state['id_token'])
                         dataset_link = generate_presigned_url(st.secrets["aws"]["AWS_S3_BUCKET"], object_key)
+                        logging.info(f"Generated synthetic dataset link: {dataset_link}")
 
                         if dataset_link:
                             st.markdown(f"**Dataset Name:** Synthetic Dataset")
@@ -227,11 +230,15 @@ def main():
                             st.markdown(f"**Number of Instances:** {499 if instances == 'less than 500' else 501}")
                             st.markdown(f"**Target Variable:** Target")
 
-                            # Display dataset preview (first 50 rows)
-                            dataset_preview = pd.read_csv(dataset_link)
-                            if cleanliness == 'Unclean':
-                                dataset_preview = make_dataset_unclean(dataset_preview)
-                            st.dataframe(dataset_preview.head(51))
+                            try:
+                                # Display dataset preview (first 50 rows)
+                                dataset_preview = pd.read_csv(dataset_link)
+                                if cleanliness == 'Unclean':
+                                    dataset_preview = make_dataset_unclean(dataset_preview)
+                                st.dataframe(dataset_preview.head(51))
+                            except Exception as e:
+                                st.markdown('<div class="custom-error">Failed to read the dataset from the generated link.</div>', unsafe_allow_html=True)
+                                logging.error(f"Failed to read the dataset from the generated link: {e}")
                         else:
                             st.markdown('<div class="custom-error">Failed to generate a download link. Please try again.</div>', unsafe_allow_html=True)
             else:
