@@ -4,6 +4,7 @@ import logging
 from web_implementation import generate_presigned_url, fetch_dataset_metadata, make_dataset_unclean, password_requirements
 from user_auth import signup_user, authenticate_user
 from dataset_gen import main as generate_synthetic_dataset
+import time
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -107,6 +108,7 @@ if 'menu' not in st.session_state:
 # Main function for the Streamlit app
 def main():
     st.title('Dataset Generator')
+    st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
 
     # Login/Sign Off and Signup section
     if st.session_state['logged_in']:
@@ -125,6 +127,10 @@ def main():
             if st.button("Signup", key="homepage_signup"):
                 st.session_state['menu'] = "Signup"
                 
+                
+    st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
+
+
     st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
 
     # Handle the login and signup processes
@@ -134,10 +140,13 @@ def main():
             email = st.text_input("Email")
             password = st.text_input("Password", type='password')
             if st.button("Login", key="login_page_login"):
+                logging.info(f"Attempting to authenticate user: {email}")
+                st.session_state['email'] = email  # Ensure email is set in session state
+                st.session_state['password'] = password  # Ensure password is set in session state
+                time.sleep(1)  # Small delay to ensure state is updated
                 response = authenticate_user(email, password)
                 if response:
                     st.session_state['logged_in'] = True
-                    st.session_state['email'] = email
                     st.session_state['id_token'] = response['AuthenticationResult']['IdToken']
                     st.markdown(f'<div class="custom-success">Welcome, {email}!</div>', unsafe_allow_html=True)
                 else:
